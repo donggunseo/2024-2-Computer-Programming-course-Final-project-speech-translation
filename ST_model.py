@@ -3,9 +3,7 @@ import torch
 import torch.nn as nn
 from transformers.generation.utils import GenerationMixin
 
-def expand_attention_mask(attention_mask, tgt_len):
-    # Attention mask를 4D로 확장
-    return attention_mask[:, None, None, :].expand(-1, 1, tgt_len, -1)
+
 
 class JointSpeechEncoder(nn.Module):
     def __init__(self, wav2vec_model="facebook/wav2vec2-large-960h-lv60"):
@@ -13,7 +11,7 @@ class JointSpeechEncoder(nn.Module):
         # Load Wav2Vec2 and mBART encoder
         self.wav2vec2 = Wav2Vec2Model.from_pretrained(wav2vec_model)
         self.wav2vec2.config.attention_dropout = 0.3
-        # Wav2Vec2 configuration
+
         self.wav2vec_hidden_size = self.wav2vec2.config.hidden_size
 
         # Use only the first 12 layers of Wav2Vec2

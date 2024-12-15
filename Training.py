@@ -27,7 +27,6 @@ def prepare_dataset(split = "Training"):
         data.append({"path": path, "translation" : text_PE})
     return data
 
-# 데이터셋 준비 함수
 def collate_fn(batch, processor, tokenizer):
     input_values = [processor(np.load(sample["path"]), sampling_rate=16000, return_tensors="pt").input_values[0] for sample in batch]
     labels = [sample["translation"] for sample in batch]
@@ -87,7 +86,7 @@ def train(
     bleu_metric = load_metric("sacrebleu", trust_remote_code=True)
     model.to(device)
     criterion = LabelSmoothingCrossEntropy(smoothing=0.3)
-    best_bleu = -1  # 최적 BLEU 초기값
+    best_bleu = -1  
     def clean_labels(labels):
         labels = labels.cpu().numpy()
         return [[token for token in label if token != -100] for label in labels]
@@ -113,7 +112,6 @@ def train(
 
         print(f"Epoch {epoch+1} Average Loss: {total_loss / len(train_loader):.4f}")
 
-        # Validation
         model.eval()
         val_loss = 0
         val_bleu = 0
@@ -125,7 +123,6 @@ def train(
                 outputs = model(input_values=input_values, labels=labels)
                 val_loss += criterion(outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)).item()
 
-                # BLEU 계산
                 generated_ids = model.generate(input_values, max_length=128, num_beams=5)
                 val_bleu += compute_bleu(generated_ids, clean_labels(labels), tokenizer, bleu_metric)
 
@@ -133,18 +130,15 @@ def train(
         avg_val_bleu = val_bleu / len(val_loader)
         print(f"Validation Loss: {avg_val_loss:.4f}, BLEU: {avg_val_bleu:.2f}")
 
-        # 최적 모델 저장
         if avg_val_bleu > best_bleu:
             best_bleu = avg_val_bleu
             print(f"New best BLEU score: {best_bleu:.2f}. Saving model...")
             torch.save(model.state_dict(), os.path.join(save_path, f"{best_bleu:.2f}_model.pt"))
 
-        # Learning rate scheduler step
         scheduler.step()
 
-    # Test set 평가
     print("Evaluating on test set...")
-    model.load_state_dict(torch.load(os.path.join(save_path, f"{best_bleu:.2f}_model.pt")))  # 최적 모델 불러오기
+    model.load_state_dict(torch.load(os.path.join(save_path, f"{best_bleu:.2f}_model.pt"))) 
     model.eval()
     test_bleu = 0
     with torch.no_grad():
@@ -210,7 +204,6 @@ if __name__ == "__main__":
     print("train : ", len(train_dataset))
     print("val : ", len(val_dataset))
     print("test : ", len(test_dataset))
-    # 학습 시작
     train(
         model,
         train_loader,
